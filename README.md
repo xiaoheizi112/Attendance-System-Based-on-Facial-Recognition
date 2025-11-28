@@ -51,6 +51,7 @@
 │   └── image.qrc              # 资源文件
 ├── README.md                  # 项目说明文档
 └── README.assets/             # 文档资源图片目录
+```
 
 ### 项目流程
 #### 系统启动流程
@@ -158,4 +159,3 @@ SeetaFace
 
 ![777](README.assets/777.png)
 
-![markmap-20251123 163911](README.assets/markmap-20251123 163911.svg)
