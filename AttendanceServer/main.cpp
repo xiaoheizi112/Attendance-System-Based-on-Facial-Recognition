@@ -9,11 +9,27 @@
 #include <opencv.hpp>
 
 
+// 主函数：程序入口点
+// 功能：
+// - 初始化Qt应用程序
+// - 注册自定义数据类型到Qt元对象系统，用于信号槽传递
+// - 连接SQLite数据库
+// - 创建系统所需的数据库表结构（员工表和考勤表）
+// - 启动考勤系统主窗口
+// 参数：
+// - argc: 命令行参数数量
+// - argv: 命令行参数数组
+// 返回值：
+// - 应用程序执行状态码（0表示正常退出，-1表示错误退出）
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    //注册到Qt里面
+    // 注册自定义数据类型到Qt元对象系统
+    // 目的：使这些类型可以在Qt的信号槽机制中安全传递
+    // cv::Mat&：OpenCV的矩阵引用类型，用于在不同线程间传递图像数据
+    // cv::Mat：OpenCV的矩阵值类型，用于在不同线程间传递图像数据
+    // int64_t：64位整数类型，用于在信号槽中传递大整数数据（如时间戳、ID等）
     qRegisterMetaType<cv::Mat>("cv::Mat&");
     qRegisterMetaType<cv::Mat>("cv::Mat");
     qRegisterMetaType<int64_t>("int64_t");

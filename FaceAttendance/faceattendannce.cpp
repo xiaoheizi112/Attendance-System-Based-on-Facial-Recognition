@@ -4,6 +4,16 @@
 #include <QJsonParseError>
 #include <QJsonObject>
 
+/**
+ * @brief 构造函数
+ * @param parent 父窗口指针
+ * 功能：
+ * - 初始化考勤窗口，设置固定大小和UI界面
+ * - 配置摄像头设备
+ * - 启动定时器进行视频采集和人脸检测
+ * - 加载Haar级联分类器进行人脸检测
+ * - 设置网络连接信号槽，实现自动重连机制
+ */
 FaceAttendannce::FaceAttendannce(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::FaceAttendannce)
@@ -59,6 +69,17 @@ FaceAttendannce::~FaceAttendannce()
     delete ui;
 }
 
+/**
+ * @brief 定时器事件处理函数
+ * @param e 定时器事件对象
+ * 功能：
+ * - 定时从摄像头捕获视频帧
+ * - 对图像进行人脸检测
+ * - 处理检测到的人脸，当连续检测到同一人脸多次时，将图像发送到服务器
+ * - 将捕获的图像转换格式并显示在UI界面上
+ * 触发时机：
+ * - 当定时器启动后，每隔100毫秒自动调用
+ */
 void FaceAttendannce::timerEvent(QTimerEvent *e)
 {
     //采集数据
@@ -193,41 +214,104 @@ void FaceAttendannce::timerEvent(QTimerEvent *e)
     ui->videoLb->setPixmap(mmp);
 }
 
+/**
+ * @brief 连接定时器超时处理函数
+ * 功能：
+ * - 尝试连接到考勤服务器
+ * - 连接指定IP地址和端口的服务器
+ * 触发时机：
+ * - 当连接定时器超时时调用，默认每5秒尝试一次
+ */
 void FaceAttendannce::Timer_connect()
 {
     //连接服务器
     msocket.connectToHost("192.168.31.158",8888);
 }
 
+/**
+ * @brief 停止连接定时器处理函数
+ * 功能：
+ * - 停止连接定时器，表示已成功连接到服务器
+ * - 输出调试信息指示连接状态
+ * 触发时机：
+ * - 当与服务器连接成功时自动调用
+ */
 void FaceAttendannce::Stop_connect()
 {
-
     mtimer.stop();
     qDebug()<<"成功连接服务器!";
 }
 
+/**
+ * @brief 启动连接定时器处理函数
+ * 功能：
+ * - 启动连接定时器，尝试重新连接服务器
+ * - 设置定时器间隔为5秒
+ * - 输出调试信息指示断开状态
+ * 触发时机：
+ * - 当与服务器连接断开时自动调用
+ */
 void FaceAttendannce::Start_connect()
 {
     mtimer.start(5000);//启动定时器
     qDebug()<<"断开服务器连接!";
 }
 
+/**
+ * @brief 接收数据处理函数
+ * 功能：
+ * - 接收服务器返回的JSON格式考勤结果数据
+ * - 解析JSON数据，提取员工ID、姓名、部门和时间信息
+ * - 更新UI界面显示考勤结果
+ * - 设置员工头像显示
+ * 触发时机：
+ * - 当接收到服务器数据时自动调用
+ */
 void FaceAttendannce::recv_data()
 {
+    // 注释：JSON数据格式示例，包含考勤结果所需的字段
     //{employeeID:%1,name:%2,department:软件,time:%3}
+    
+    // 从TCP套接字读取服务器返回的所有数据
+    // QByteArray是Qt中的字节数组类，适合存储二进制数据或文本数据
+    // msocket.readAll()会一次性读取socket缓冲区中的所有可用数据
     QByteArray array = msocket.readAll();
+    
+    // 调试输出：打印接收到的原始数据，用于开发调试
     qDebug()<<array;
-    //Json解析数据
+    
+    // Json解析数据流程
+    // 创建JSON解析错误对象，用于捕获解析过程中的错误信息
     QJsonParseError err;
+    
+    // 使用QJsonDocument::fromJson()静态方法解析JSON数据
+    // 参数说明：
+    // - array: 包含JSON格式文本的字节数组
+    // - &err: 错误信息对象的引用，解析失败时会填充错误信息
+    // 返回值: 成功时返回包含JSON数据结构的QJsonDocument对象
     QJsonDocument doc = QJsonDocument::fromJson(array,&err);
+    
+    // 错误处理：检查JSON解析是否成功
+    // QJsonParseError::NoError表示解析成功
+    // 解析失败时输出错误信息并提前返回
     if(err.error!= QJsonParseError::NoError){
         qDebug()<<"Json解析错误！";
         return;
     }
+    
+    // 从QJsonDocument中获取根级别的JSON对象
+    // QJsonObject表示JSON中的对象类型，由键值对组成
     QJsonObject obj = doc.object();
+    
+    // 从JSON对象中提取各个字段的值
+    // 使用value()方法根据键名获取值，再使用toXXX()方法转换为所需类型
+    // 提取员工ID信息
     QString employeeID = obj.value("employeeID").toString();
+    // 提取员工姓名信息
     QString name = obj.value("name").toString();
+    // 提取员工部门信息
     QString department = obj.value("department").toString();
+    // 提取考勤时间信息
     QString timestr = obj.value("time").toString();
 
     ui->numberEdit->setText(employeeID);
